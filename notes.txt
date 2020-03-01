@@ -1,0 +1,67 @@
+T0 - Symbol table size (sym_table_size)
+T1 - Symbol table pointer (sym_table_pointer)
+T$ - Symbol table: identifier (symbol_table_identifier)
+T0$: - Symbol table: type of identifier:
+
+  V: variable
+  P: procedure
+  A: array
+  F: function
+  C: constant
+  Y: parameter
+
+(sym_table_kind_of_ident)
+
+
+T1( ) - Symbol table: level
+sym_table_id_level
+
+T2( ) - Symbol table: value (constant) or displacement (variable) or
+   address (proc or func)
+sym_table_val_lookup
+
+T3( ) - Symbol table: array size (array) or number of param (proc or func)
+sym_table_proc_params_or_arr
+
+================================
+
+L0 - Length of input line
+L1 - Static level of procedure - proc_static_level
+L$ - Input line buffer
+
+================================
+
+FNE(X):
+prints the error message
+corresponding to error code X.
+
+FNE1(A$,X):
+checks to see if the current token is equal
+to A$, and prints the error message corre-
+sponding to error code X if not.
+
+FNE2:
+is similar to FNE1 except that the scanner
+is first called to get a new token.
+
+400  - Error routines - FNE, FNE1, FNE2
+1030 - Get a character
+1090 - Input a line
+1240 - Get a token
+1950 - Enter entry into symbol table
+2060 - Search symbol table
+2170 - Constant declaration
+2240 - Get constant
+2340 - Variable declaration
+2380 - Simple expression
+2610 - Term
+2850 - Factor
+3290 - Expression
+3490 - Statement
+5340 - Block
+6120 - Push numeric
+6150 - Pop numeric
+6180 - Push string
+6240 - Pop string
+6310  - Code Generation - FNG
+6520 - Fixup forward references

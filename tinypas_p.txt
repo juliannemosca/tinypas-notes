@@ -1,0 +1,485 @@
+40 r_words_num 		= 32 		// n0 - # of reserved words
+50 sym_table_size 	= 50 		// t0 - symbol table size
+60 int_size			= 32767		// n1
+70 ident_len		= 8			// n2
+
+80 reserved_words$[r_words_num * 5]
+
+90 symbol_table_identifier$[sym_table_size * ident_len] - T$
+100 sym_table_kind_of_ident$[sym_table_size] // in sym tab\c,v,p - T0$
+sym_table_pointer = 0; // T1
+
+110 line_buffer$[64]
+120 stack_a$[ident_len], stack_b$[5], stack_numbers[100], stack_strings[100] // stacks
+
+140 sym_table_id_level[sym_table_size] // T1( )
+150 sym_table_val_lookup[sym_table_size] // val (for const) or adr (for int) of id in S.T. T2 ( )
+160 sym_table_proc_params_or_arr[sym_table_size] // array dim or # of proc params. T3 ( )
+
+l1_proc_static_level = 0;
+
+// w0$
+keywords[] = 	"AND ARRAY BEGIN CALL CASE CONST DIV DO"
+				"DOWNTO ELSE END FOR FUNC IF INTEG MEM MOD"
+				"NOT OF OR PROC READ REPEAT SHL SHR THEN"
+				"TO TYPE UNTIL VAR WHILE WRITE"
+
+cols[80] // c$
+p_code_mnemonics[] = "LIT OPR LOD STO CAL INT JMP JPC CSP" // m0$
+
+stack_pointer_strings = 1 // p8 for stack_strings s$
+
+p7 = 0
+p_code_abs_mem_addr_counter = p7 // p9 - start code = 0000
+next_token // s0$
+
+c0_input_buffer_pointer // c0
+c1_p_code_addr_pointer // c1
+
+250 !"P-CODES STARTS AT 0000"
+
+260 last_usable_mem = 4096 * 2 // q9
+270 active_input_file_unit_num = -1 // keyboard = -1
+280 code_printed = get_want_code_printed() // y$
+
+
+
+340 action = get_input("want Interpret (I) or Translate (T)");
+350 if action == "" then end
+360 if action == "I" then chain "INTERP"
+370 if action == "T" then chain "TRANS"
+380 END
+
+============================
+
+390
+400 REM ERROR ROUTINES
+410
+430
+430 DEF fne1(k$,e)
+
+...
+
+error_msgs[] = {
+	"MEMORY FULL",
+	"'CONST' EXPECTED",
+	"'=' EXPECTED",
+	"IDENTIFIER EXPECTED",
+	"';' or ':' MISSING",
+	"'.' EXPECTED",
+	"';' MISSING",
+	"UNDECLARED IDENT",
+	"ILLEGAL IDENT",
+	"':=' EXPECTED",
+	"'THEN' EXPECTED",
+	"';' OR 'END' EXPECTED",
+	"'DO' EXPECTED",
+	"INCORRECT SYMBOL",
+	"RELATIONAL OPERATOR EXPECTED",
+	"USE OF PROC IDENT IN EXPR",
+	"')' EXPECTED",
+	"ILLEGAL FACTOR",
+	"'BEGIN' EXPECTED",
+	"'OF' EXPECTED",
+	"ILLEGAL HEX CONST",
+	"'TO' OR 'DOWNTO' EXPECTED",
+	"NUMBER OUT OF RANGE",
+	"'(' EXPECTED",
+	"'[' EXPECTED",
+	"']' EXPECTED",
+	"PARAMETERS MISMATCHED",
+	"DATA TYPE NOT RECOGNIZED",
+	"BUG",
+}
+
+1000 // *************************
+1010 // SCANNER
+1020 // *************************
+
+1030 // ===== GETCHAR ======
+1040 IF C0<L0 THEN 1060
+1850 GOSUB 1090'GOTO 1040
+1860 C0=C8 +1\X$=L$( C0,C0)
+1070 RETURN
+// ==========================
+
+109O // ===== INPUT A LINE =====
+
+1180 !%4I,C1," "
+1110 IF F5<0 THEN INPUT L$ ELSE L16(1
+1128 IF L$="" THEN 1100
+1130 IF L$(1,1)="$" THEN 1210\REM MACR O FILE?
+1140 L S=L$+" "\C0=0
+1150 LO=LEN ( LS ),,RETURN
+
+
+1160 IF TYF'(F5)<> 0 THEN 1190\REM EUF IF TYP=O
+1178 CLOSE MF5\F5=F5 - 1\REM RETURN TO LAST ACTIVE FILE
+1188 GOTO 1110
+1190 READ *F5,L$\!L$
+1200 GOTO 1130
+1210 F5=F5 +1\OPEN *F5,L$(2,LEN(L$))
+1220 GOTO 1090
+
+
+// ===========================
+// GET A TOKEN
+// @returns: next_token (	"IDENT",
+							"NUM",
+							"STR",
+							":",
+							":="
+							"=",
+							"<",
+							"<=",
+							">",
+							">=",
+							"<>",
+							... or any keyword from keywords[]
+							),
+			 tok_str, tok_num
+
+next_token 	// s0$
+tok_str 	// a$
+tok_num 	// n3
+
+
+// if a string is not a keyword and not a literal then next_token is "IDENT" and tok_str is the identifier val
+//
+// a string literal is like 'THIS' between single quotes
+//
+// only first ident_len letters are used (n2) for idents
+//
+// 1790 after '{' ignore for ignore comments (remember comments in pascal are between { }
+//
+// also for numbers we want to support % prefix for HEX constants
+
+
+1260 IF XS<>" " THEN 1200
+1271, GCISUB 103U`.GOTU 1,'t:U'-.REM FLUSH E:LHN,.i.
+1250 IF X$<"A" 1HEN1460REM INDENlIf1Lk%
+129(1 IF X$>"Z" THEN1460
+1300 K=0 '•.A$="
+1310 IF K>=N2 THEN 1330'• REM ONLY If, T t!2 LI I EFLL i+F'E I,(,EO
+1320 K=K+1 ',A$< K, K )_;<:$
+133(1 GOSUB 1030
+1340 T =ASC< X$ )
+1350 IF T > 47 AND 1 <5E: OR Tt• 4 ANU 1<:91 IHE N 110FEM UGT Uk LFIR
+1360REM BIN SERACH FOR RES WURU'o
+1370 I = 1'•J=NUI5- 4
+1380 B$=A$
+1390 K =INT((I+J),10)*5+1
+1400 Z $= WU$(K,c+4)
+1410 IF B$<=7 $ THEN J=K--5
+1420 IF B $>=Z$ THEN I=K+;5
+1430 IF I <=J THEN 1390
+144(1 IF I-5)J THEN S0$=B$ ELSE S1,$-"IUENT"
+1450 RETURN
+1460 Z$=""
+1470 IF X $<"(4" THEN 1581i'•.kLM AN INIEC,Ek
+1480 IF X$;"9" THEN 1`SE:0
+1490 S0$="NUM"
+1500 2 $=Z$+X$
+1510 GOSUB 1030
+1520 IF ASC <:X$)>=40 AND ASC<)i$)<=57 THEN 1500
+1530 N3 =VAL(Z$)
+1540 IF N3<=N1 THEN RETURN
+1550 E9=30\.GOSUE: 550
+156u N3=N1\RETURN
+1570REM C.HEC:K FOR SPECIAL SYMBOL
+1580 IF x$<>° THEN 1640
+1590 GOSUB 103(1
+1600 IF X $="=" THEN 1620
+1610 SO$= "',RETURN
+1620 S0$=" _
+1630 GOSUB 1030 ',-RETURN
+1640 IF THEN 1710
+1650 GUSUB 1030
+1660 IF X$=">" THEN 1690
+1670 IF X $="=" 1HEN 1700
+1680 SO $="<"''RETURN
+1690 S0 $="<>"\GOSUC 1030••RETURN
+1780 S0 $="<="\GUSUC 103U'SRETURN
+1710 IF X S<>">" THEN 1750
+1120 GOSUB 1030\S0$=">"
+1730 IF X$<>"=" IHEN KETURN
+1740 SOS = ">='-,.GUSUB 103L1•,REIURN
+1750 IF X $<i"'" THEN 17911
+1760 S0$="STR" C$=""
+1770 GOSUB 1030 \IF X$="'" THEN 103(1
+1780 C$=C$+X$\0070 17711
+1790 IF X $<>"(" 1HEN 18.U'•.REM IGNORE COMMENTS
+1800 GOSUB 1030\.IF X$'>">" 1HEN 10110
+1810 GOSUB 1030\0070 1240
+1828 IF X $<>":" THEN 1930\REM HEX CONSTANT
+L830 GOSUB 1830 \ S0$="NUM'-,N3=U
+1840 FOR 1=1 TO 4
+
+
+2130 RETURN
+
+
+// =============================
+/**
+ * args: a$, identifier, k$: identifier type, n3: tok_num, also uses: l1_proc_static_level
+ */
+1950 REM ENTER_SYMBOL_INTO_TABLE
+
+defer sym_table_pointer += 1;
+
+      symbol_table_identifier$[sym_table_pointer] = a$
+1980  sym_table_kind_of_ident[sym_table_pointer] = k$ // store type
+
+1990 if k$ <> "C" then 2010
+2000 sym_table_val_lookup[sym_table_pointer] = tok_num // store value
+
+2010 sym_table_id_level[sym_table_pointer] = l1_proc_static_level
+
+if k$ <> "V"
+  return
+
+if not f9_alloc_for_proc_pars
+  return
+
+sym_table_val_lookup[sym_table_pointer] = d0_run_time_storage_counter;
+d0_run_time_storage_counter += 1;
+
+// =============================
+
+265O 
+2860 // REM FIND IDENT A$ IN T$, STARTING FROM T1 AND UP
+2870 // Return pointer to table if found, else return 0
+
+2880 J= (T1-1)*n2+1
+2890 FOR 1=T1 TO 1 STEP -1
+2100 IF A$=T$ (J,J+N2-1) THEN EXIT 2130
+2110 J=J-N2 \NEXT
+2120 I=0
+2130 RETURN
+
+// =============================
+// PARSER AND CODER
+// =============================
+
+// CONSTANTS
+
+handle_constant() {
+  if s0$_next_token == "NUM"
+    return;
+
+  if s0$_next_token == "IDENT" // const?
+  {
+    i = search_symbol_table()
+    if (i == 0)
+      error 2
+
+    if t0$_sym_table_kind_of_ident$[i, i] != "C"
+      error 2;
+
+    n3_numeric = t2_sym_table_val_lookup(i)
+    gosub_return
+  }
+
+  if err_fne1_current_token_is("STR")
+    error 2!
+
+  n3_numeric = ASC(C$_cols_line_read_buffer) // take 1st char
+
+  get_next_token_and_return_from_there();
+}
+
+handle_constant_decl() {
+  if err_fne1_current_token_is("IDENT")
+    error 4!
+
+  if err_fne2_next_token_is("=")
+    error 3!
+
+  get_next_token()
+  n3_numeric = handle_constant();
+
+  enter_entry_into_symbol_table(k$ = "C");
+
+  get_next_token_and_return_from_there();
+}
+
+handle_variable_decl() {
+  if err_fne1_current_token_is("IDENT")
+    error 4!
+
+  enter_entry_into_symbol_table(k$ = "V");
+  get_next_token_and_return_from_there();
+}
+
+handle_simple_expression() {
+
+  if s0$_next_token == "+" || s0$_next_token == "-" {
+    if s0$_next_token == "-" {
+      push_string(y$ = s0$_next_token)
+    }
+    get_next_token();
+	handle_term();
+	pop_string(); // pops Y$
+
+    if y$ == "-"
+	  z = FNG(1, 0, 1)
+
+2460:
+    if s0$_next_token == "+" || == "-" || == "OR    " {
+
+	  push_string(y$ = s0$_next_token)
+	  get_next_token();
+	  handle_term();
+	  pop_string(); // pops Y$
+
+2570:
+	  z=fng(1, 0, 3)
+	  goto 2460;
+2580:
+      z=fng(1, 0, 2)
+	  goto 2460;
+	  
+    } else {
+	  return
+	}
+
+  } else {
+    goto 2590
+  }
+
+2590:
+  handle_term();
+  goto 2460
+}
+
+handle_term() {
+
+  handle_factor();
+
+2630:
+
+  if s0$_next_token == "*"
+                 || == "DIV  "
+				 || == "AND  "
+				 || == "MOD  "
+				 || == "SHL  "
+				 || == "SHR  "
+    then goto 2700;
+
+  return;
+
+2700:
+
+  push_string(y$ = s0$_next_token)
+  get_next_token();
+  handle_factor();
+  pop_string();
+
+  switch (y$_popped_string) {
+  case "*":
+
+    break;
+  case "DIV  ":
+    z = fng(1, 0, 5);
+	break;
+  case "AND  ":
+    z = fng(1, 0, 15);
+	break;
+  case "MOD  ":
+    z = fng(1, 0, 7);
+	break;
+  case "SHL  ":
+    z = fng(1, 0, 17);
+	break;
+  case "SHR  ":
+    z = fng(1, 0, 18);
+	break;
+  }
+
+  goto 2630;
+}
+
+handle_factor() {
+
+ switch(s0$_next_token) {
+ case "IDENT":
+   handle_identifier();
+   break;
+ case "NUM":
+   handle_numeric_const();
+   break;
+ case "STR":
+   handle_string_const():
+   break;
+ case "(":
+   handle_paren_expr();
+   break;
+ case "MEM":
+   handle_read_mem();
+   break;
+ case "NOT":
+   handle_negation();
+   break;
+ default:
+   break;
+ }
+ error 23!
+}
+
+handle_identifier() {
+  i = search_symbol_table()
+  if i == 0
+    error 11!
+
+  if t0$_sym_table_kind_of_ident$[i, i] == "P" {
+
+    z = fnb(21) // proc name
+
+  } else if t0$_sym_table_kind_of_ident$[i, i] == "Y" {
+
+    z = fng(5, 0, 1) // func
+	i -= 1;
+	goto 4290 // out of this function, will eventually
+	          // get next token and return from there
+			  // T2(i) = ADDR. OF FUNC
+
+  } else if t0$_sym_table_kind_of_ident$[i, i] == "A" {
+
+    goto 3190 // array
+
+  } else if if t0$_sym_table_kind_of_ident$[i, i] == "C" {
+    z = fng(0, 0, T2(i)) // CONST
+	get_next_token_and_return_from_there();
+  }
+
+  z = fng(2, L1-T1(i), T2(i)) // id
+
+  get_next_token_and_return_from_there();
+}
+
+handle_numeric_const() {
+
+  get_next_token_and_return_from_there();
+}
+
+handle_string_const() {
+
+  get_next_token_and_return_from_there();
+}
+
+handle_paren_expr() {
+  get_next_token();
+  handle_expression();
+  if s0$_next_token == ")"
+    get_next_token_and_return_from_there();
+
+  error 22!
+}
+
+handle_read_memory() {
+
+}
+
+handle_negation() {
+
+}
